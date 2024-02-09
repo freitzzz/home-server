@@ -9,8 +9,8 @@ monitor_scripts_prefix='monitor'
 # First check if there is an already activity monitoring session
 if screen -ls "$screen_monitor_id" > /dev/null != 0;
 then
-    echo "Monitoring scripts already seem to be running. Perhaps you want to first stop them?"
-    echo "> ./stop.sh"
+    echo 'Monitoring scripts already seem to be running. Perhaps you want to first stop them?'
+    echo '> ./stop.sh'
     exit 1
 fi
 
@@ -22,3 +22,5 @@ for script in $script_dir_path/$monitor_scripts_prefix*;
 do
 	screen -S $screen_monitor_id -X stuff "exec $script &^M"
 done
+
+echo 'Started all monitoring scripts.'
