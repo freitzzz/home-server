@@ -6,7 +6,7 @@ script_dir_path=$(dirname $(realpath "$0"))
 screen_monitor_id='monitoring'
 monitor_scripts_prefix='monitor'
 
-# First check if there is an already activity monitoring session
+# First check if there is an already active monitoring session
 if screen -ls "$screen_monitor_id" > /dev/null != 0;
 then
     echo 'Monitoring scripts already seem to be running. Perhaps you want to first stop them?'
