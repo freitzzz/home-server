@@ -2,13 +2,29 @@
 
 # Monitors NGINX access logs for immich.joaomagfreitas.link
 
-file=/var/log/nginx/immich.access.log
+declare chat_id=
+declare topic_id=
+declare bot_token=
 
-chat_id="<telegram-monitoring-chat-id>"
-topic_id="<telegram-monitoring-channel-id>"
-bot_token="<telegram-monitoring-bot-token>"
-
+script_dir_path=$(dirname $(realpath "$0"))
+events_file=/var/log/nginx/immich.access.log
 auth_attempt_pattern="POST /api/auth"
+
+load_env() {
+	env_path="$script_dir_path/.env"
+
+	if [ ! -f $env_path ];
+	then
+		echo '.env file is not present.'
+		exit 1
+	fi
+
+	source $env_path
+
+	chat_id="$telegram_chat_id"
+	topic_id="$telegram_immich_topic_id"
+	bot_token="$telegram_bot_token"
+}
 
 send_message() {
 	message=$1
@@ -30,8 +46,9 @@ alert_error() {
 	send_message "🚨⛔️ Something went wrong processing a log message!\nPlease check the logs for transaction id: $uuid."
 }
 
+load_env
 
-tail -fn0 $file | \
+tail -fn0 $events_file | \
 while read line ; do
 	log_message=$(echo "$line" | jq)
 	if [ $? != 0 ];

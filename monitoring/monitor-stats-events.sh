@@ -2,20 +2,18 @@
 
 # Monitors NGINX access logs for stats.joaomagfreitas.link
 
-script_dir_path=$(dirname $(realpath "$0"))
-
-file=/var/log/nginx/stats.access.log
-
-count_hit_pattern="POST /count"
-
 declare chat_id=
 declare topic_id=
 declare bot_token=
 
+script_dir_path=$(dirname $(realpath "$0"))
+events_file=/var/log/nginx/stats.access.log
+count_hit_pattern="POST /count"
+
 load_env() {
 	env_path="$script_dir_path/.env"
 
-	if ! -f $env_path;
+	if [ ! -f $env_path ];
 	then
 		echo '.env file is not present.'
 		exit 1
@@ -50,7 +48,7 @@ alert_error() {
 
 load_env
 
-tail -fn0 $file | \
+tail -fn0 $events_file | \
 while read line ; do
 	log_message=$(echo "$line" | jq)
 	if [ $? != 0 ];
