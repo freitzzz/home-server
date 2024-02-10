@@ -2,13 +2,31 @@
 
 # Monitors NGINX access logs for stats.joaomagfreitas.link
 
+script_dir_path=$(dirname $(realpath "$0"))
+
 file=/var/log/nginx/stats.access.log
 
-chat_id="<telegram-monitoring-chat-id>"
-topic_id="<telegram-monitoring-channel-id>"
-bot_token="<telegram-monitoring-bot-token>"
-
 count_hit_pattern="POST /count"
+
+declare chat_id=
+declare topic_id=
+declare bot_token=
+
+load_env() {
+	env_path="$script_dir_path/.env"
+
+	if ! -f $env_path;
+	then
+		echo '.env file is not present.'
+		exit 1
+	fi
+
+	source $env_path
+
+	chat_id="$telegram_chat_id"
+	topic_id="$telegram_stats_topic_id"
+	bot_token="$telegram_bot_token"
+}
 
 send_message() {
 	message=$1
@@ -30,6 +48,7 @@ alert_error() {
 	send_message "🚨⛔️ Something went wrong processing a log message!\nPlease check the logs for transaction id: $uuid."
 }
 
+load_env
 
 tail -fn0 $file | \
 while read line ; do
