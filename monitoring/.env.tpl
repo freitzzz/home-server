@@ -1,0 +1,4 @@
+telegram_bot_token=
+telegram_chat_id=
+telegram_immich_topic_id=
+telegram_stats_topic_id=
