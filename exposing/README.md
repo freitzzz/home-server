@@ -12,4 +12,23 @@ The following diagram visually explains how a reverse proxy works and the reason
 
 ## Port Forwarding (Router)
 
-...
+To expose a reverse proxy to the Internet, I have to configure my router to forward TCP packets it receives on a specific port (the port that will be exposed) to a port that is exposed in the internal network (port which the reverse proxy is available).
+
+This configuration varies from router to router, but in my case the process is as follows:
+
+1. Open router configuration web platform (`192.168.1.1`)
+2. Authenticate
+3. Click on settings icon
+4. Navigate to Routing Rules > IPV4 Port Mapping
+5. Click "New" and again "New"
+6. Fill form
+    1. Type: `Default`
+    2. Application Name: `<service label>`
+    3. WAN Name: `Internet`
+    4. Internal Host: `<home server IP>`
+    5. Protocol: `TCP`
+    6. Internal Port: `<reverse proxy port> - <reverse proxy port>`
+    7. External Port: `<exposed port> - <exposed port>`
+7. Click "Apply"
+
+## Exposing a new Service (Manual)
