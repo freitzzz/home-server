@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+script_dir_path=$(dirname $(realpath $0))
+repo_root_path="$script_dir_path/../.."
+plantuml_jar_dir="$repo_root_path/bin"
+plantuml_jar_path="$plantuml_jar_dir/plantuml.jar"
+
+# Validate if plantuml.jar is present, otherwise download it
+if [[ ! -f $plantuml_jar_path ]]
+then
+    printf "$plantuml_jar_path file missing, downloading it...\n"
+    mkdir -p $plantuml_jar_dir
+    wget -q https://github.com/plantuml/plantuml/releases/download/v1.2022.7/plantuml-1.2022.7.jar -O $plantuml_jar_path
+fi
+
+
+puml_files=$(find "$repo_root_path" -type f -name "*.puml")
+
+git_status_before=$(git status)
+
+for file in ${puml_files[@]}; do
+    printf "Converting $file to svg\n"
+    java -jar $plantuml_jar_path -tsvg -o "../" "$file"&
+done
+
+wait
+
+git_status_after=$(git status)
+
+if [[ $git_status_before == $git_status_after ]]
+then
+    exit 0
+fi
+
+printf "New svg files generated\n"
+exit 1
