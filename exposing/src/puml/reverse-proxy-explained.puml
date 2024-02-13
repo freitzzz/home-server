@@ -1,0 +1,25 @@
+@startuml reverse-proxy-explained
+
+title "Basics of a Reverse Proxy"
+
+actor Client as C #LightSkyBlue
+participant "Reverse Proxy" as RP <<Exposed Port>> #LightPink
+participant Service as S <<Internal Port>> #LightGreen
+
+C -> RP: HTTPs Request (TLS)
+RP -> RP: Log Request
+RP -> S: Forward HTTP Request (plain-text)
+S --> RP: Response (plain-text)
+RP --> C: Response (TLS)
+
+note right of RP
+The client never communicates
+**directly** with the service!
+
+The only **exposed** port is the 
+**reverse proxy** service port.
+
+Each service has its **own** reverse proxy.
+end note
+
+@enduml
