@@ -48,5 +48,44 @@ After acquiring a domain, you need to tell DNS servers to translate the domain t
 You can confirm if DNS servers are resolving the public IP address with `dig` (it might take some minutes for all configurations to roll out):
 
 ```bash
-dig <domain> +short
+dig <domain/subdomain> +short
 ```
+
+## Certificates Generation (TLS)
+
+Free TLS certificates can be acquired for free from [Let's Encrypt](https://letsencrypt.org/). To automate the process of generating one for the service to expose, the `certbot` is used (`sudo apt install certbot python3-certbot-nginx`).
+
+The certbot tool has to complete a challenge with `Let's Encrypt` to prove that the requesting client owns the domain and is trustworthy, and for that a file must be exposed in the `.well-known` directory of NGINX default site (running on port **80**).
+
+The process to generate a new certificate is as follows:
+
+1. Add port forwarding rule on router for port **80** (connecting to port 80 of home server)
+2. Run `sudo certbot --nginx -d <subdomain/domain>` (take about 15 seconds to finish)
+3. Remove port forwarding rule
+
+## Exposing a new Service (Manual)
+
+Exposing a new service is a process that takes no more than 5 minutes, but requires prior decision on which domain/subdomain will be used to access the service:
+
+1. Start the service and note the port it's exposed
+2. Create a new NGINX site configuration for (`sudo cp /etc/nginx/conf.d/<existing_site>.conf /etc/nginx/conf.d/<subdomain>.<domain>.conf`)
+3. Edit the newly created configuration file and add the following information:
+    1. `server_name <subdomain/domain>;`
+    2. `listen <exposing port> ssl;`
+    3. `access_log /var/log/nginx/<subdomain/domain>.access.log customformat;`
+    4. Now under `location /`
+    ```nginx
+        proxy_pass http://0.0.0.0:<service_port>;
+	    proxy_set_header Host              $http_host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # http://nginx.org/en/docs/http/websocket.html
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade    $http_upgrade;
+        proxy_set_header   Connection "upgrade";
+        proxy_redirect off;
+    ```
+4. Save file
+5. Generate TLS certificate following [steps mentioned above](#certificates-generation-tls)
