@@ -31,4 +31,22 @@ This configuration varies from router to router, but in my case the process is a
     7. External Port: `<exposed port> - <exposed port>`
 7. Click "Apply"
 
-## Exposing a new Service (Manual)
+## Domain Resolving (DNS)
+
+To expose a service to the Internet a domain name is required for two reasons: TLS certificates and being able to access different services without recurring to multiple locations under the same host. For reference, I buy and manage my domains at [Porkbun](https://porkbun.com).
+
+After acquiring a domain, you need to tell DNS servers to translate the domain to your home server public IP address. These are the steps to do it:
+
+1. Grab the home server public IP address (`wget -qO- https://ifconfig.me`)
+2. Enter the domain management portal of your domain
+3. Add new record:
+    1. Select `A` record (or `AAAA` if IPV6)
+    2. Write the domain or subdomain to resolve the IP address
+    3. Paste the public IP address
+4. Save
+
+You can confirm if DNS servers are resolving the public IP address with `dig` (it might take some minutes for all configurations to roll out):
+
+```bash
+dig <domain> +short
+```
