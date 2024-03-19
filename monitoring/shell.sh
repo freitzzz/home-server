@@ -82,7 +82,11 @@ prevent() {
 
 # Detects if a request had origin from an intruder.
 detection() {
-	read ip user_agent status endpoint < <(echo $(echo "$1" | jq -r '.IP, ."User-Agent", .Status, .Endpoint'))
+	read ip proxy_ip user_agent status endpoint < <(echo $(echo "$1" | jq -r '.IP, ."Proxy-IP", ."User-Agent", .Status, .Endpoint'))
+
+	if [ ! -z "$proxy_ip" ]; then
+		ip="$proxy_ip"
+	fi
 
 	if [ $status -gt 399 ]; then
 		echo "(detection): detected failure request (status: $status)!"
