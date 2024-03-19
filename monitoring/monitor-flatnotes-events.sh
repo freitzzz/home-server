@@ -2,64 +2,20 @@
 
 # Monitors NGINX access logs for flatnotes.joaomagfreitas.link
 
-declare chat_id=
-declare topic_id=
-declare bot_token=
+source shell.sh
 
-script_dir_path=$(dirname $(realpath "$0"))
-events_file=/var/log/nginx/flatnotes.access.log
-auth_attempt_pattern="POST /api/token"
+on_authentication_attempt() {
+	request_log="$1"
 
-load_env() {
-	env_path="$script_dir_path/.env"
-
-	if [ ! -f $env_path ];
-	then
-		echo '.env file is not present.'
-		exit 1
-	fi
-
-	source $env_path
-
-	chat_id="$telegram_chat_id"
-	topic_id="$telegram_flatnotes_topic_id"
-	bot_token="$telegram_bot_token"
+	alert_message "🚨 New authentication attempt to flatnotes.joaomagfreitas.link! 🚨\n$request_log"
 }
 
-send_message() {
-	message=$1
-	message_escaped=$(echo "${message//\"/"\\\""}")
+authentication_attempt_handler() {
+	request_log="$1"
 
-	curl -X POST \
-        	-H 'Content-Type: application/json' \
-        	-d "{\"chat_id\": \"$chat_id\", \"text\": \"$message_escaped\", \"message_thread_id\": \"$topic_id\"}" \
-        	"https://api.telegram.org/$bot_token/sendMessage" \
-		-o /dev/null -s
+	pattern_handler "$request_log" "POST /api/token" "on_authentication_attempt"
 }
 
-alert_error() {
-	error_message=$1
-	uuid=$(cat /proc/sys/kernel/random/uuid)
+register_handler "authentication_attempt_handler"
 
-	echo "error: $error_message ($uuid)"
-
-	send_message "🚨⛔️ Something went wrong processing a log message!\nPlease check the logs for transaction id: $uuid."
-}
-
-load_env
-
-tail -fn0 $events_file | \
-while read line ; do
-	log_message=$(echo "$line" | jq)
-	if [ $? != 0 ];
-	then
-		alert_error "(jq) failed to parse line: $line"
-		continue
-	elif [ $(echo $log_message | grep -q -Ev "$auth_attempt_pattern"; echo $?) != 0 ];
-	then
-		send_message "🚨 New authentication attempt to flatnotes.joaomagfreitas.link! 🚨\n$log_message"
-		continue
-	fi
-
-	send_message "ℹ️ New request to flatnotes.joaomagfreitas.link!\n$log_message"
-done
+init "flatnotes"
