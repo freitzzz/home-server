@@ -18,4 +18,4 @@ authentication_attempt_handler() {
 
 register_handler "authentication_attempt_handler"
 
-init
+init "immich"
