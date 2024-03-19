@@ -70,12 +70,13 @@ alert_error() {
 # Prevents intrusors of establishing new connections with the server.
 prevent() {
 	ip="$1"
+	failure_events=${intrusions[$ip]}
 
-	if [ ${intrusions[$ip]} -gt $max_failure_events ]; then
-		echo "blocking IP ($1)!"
+	if [[ -v failure_events && $failure_events -ge $max_failure_events ]]; then
+		echo "(prevent): blocking IP ($ip)!"
 
-		# sudo iptables -A INPUT $ip -j DROP
-		# sudo iptables -A OUTPUT $ip -j DROP
+		sudo iptables -A INPUT "$ip" -j DROP
+		sudo iptables -A OUTPUT "$ip" -j DROP
 	fi
 }
 
@@ -84,14 +85,18 @@ detection() {
 	read ip user_agent status endpoint < <(echo $(echo "$1" | jq -r '.IP, ."User-Agent", .Status, .Endpoint'))
 
 	if [ $status -gt 399 ]; then
+		echo "(detection): detected failure request (status: $status)!"
+
 		intrusions[$ip]=$((intrusions[$ip] + 1))
 	fi
 
-	if [ $(
+	if [[ $(
 		echo $endpoint | grep -q -Ev "* /cgi-bin"
 		echo $?
-	) != 0 && !$allow_cgi ]; then
-		intrusions[$ip]=$max_failure_events
+	) != 0 && !$allow_cgi ]]; then
+		echo "(detection): detected cgi request! (endpoint: $endpoint)!"
+
+		intrusions[$ip]=$((intrusions[$ip] + $max_failure_events))
 	fi
 
 	prevent $ip
@@ -139,7 +144,7 @@ pattern_handler() {
 detection_handler() {
 	request_log="$1"
 
-	detection $request_log
+	detection "$request_log"
 }
 
 # Initializes the monitoring script. This function should be the last call of each monitoring scripts.
