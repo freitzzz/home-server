@@ -3,3 +3,5 @@ telegram_chat_id=
 telegram_immich_topic_id=
 telegram_stats_topic_id=
 telegram_flatnotes_topic_id=
+
+allow_cgi=false
