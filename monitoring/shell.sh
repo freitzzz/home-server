@@ -6,6 +6,9 @@ declare chat_id=
 declare topic_id=
 declare bot_token=
 
+# Configuration variables in regards to special requests that the monitoring instance can receive.
+declare allow_cgi=false
+
 # A map/table that registers IPs of clients that triggered detection & prevention.
 # Each key is an unique IPv4 address and the mapped value represents how many times it triggered the mechanism of detection & prevention.
 # Example: intrusions[34.92.41.111]=3
@@ -78,10 +81,17 @@ prevent() {
 
 # Detects if a request had origin from an intruder.
 detection() {
-	read ip status < <(echo $(echo "$1" | jq -r '.IP, ."User-Agent", .Status'))
+	read ip user_agent status endpoint < <(echo $(echo "$1" | jq -r '.IP, ."User-Agent", .Status, .Endpoint'))
 
 	if [ $status -gt 399 ]; then
 		intrusions[$ip]=$((intrusions[$ip] + 1))
+	fi
+
+	if [ $(
+		echo $endpoint | grep -q -Ev "* /cgi-bin"
+		echo $?
+	) != 0 && !$allow_cgi ]; then
+		intrusions[$ip]=$max_failure_events
 	fi
 
 	prevent $ip
@@ -125,12 +135,20 @@ pattern_handler() {
 	fi
 }
 
+# A request log handler that sends a request to detection phase.
+detection_handler() {
+	request_log="$1"
+
+	detection $request_log
+}
+
 # Initializes the monitoring script. This function should be the last call of each monitoring scripts.
 init() {
 	topic="$1"
 
 	load_env $topic
 	register_handler "default_handler"
+	register_handler "detection_handler"
 
 	tail -fn0 /var/log/nginx/$topic.access.log |
 		while read line; do
