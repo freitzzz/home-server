@@ -1,10 +1,10 @@
 # Sourceable bash file that serves as the "shell" for monitoring scripts.
 # Provides core functions and abstracts notification channels.
 
-# Local variables in regards to which Telegram chat to use to notify server owners of server events.
-local chat_id=
-local topic_id=
-local bot_token=
+# Configuration variables in regards to which Telegram chat to use to notify server owners of server events.
+declare chat_id=
+declare topic_id=
+declare bot_token=
 
 # A map/table that registers IPs of clients that triggered detection & prevention.
 # Each key is an unique IPv4 address and the mapped value represents how many times it triggered the mechanism of detection & prevention.
@@ -12,7 +12,7 @@ local bot_token=
 declare -A intrusions
 
 # An array of callbacks that server owners register to handle a request log.
-declare -A handlers
+declare -a handlers
 
 # Absolute path of the directory this file exists.
 script_dir_path=$(dirname $(realpath "$0"))
@@ -37,7 +37,8 @@ load_env() {
 	source $env_path
 
 	chat_id="$telegram_chat_id"
-	topic_id="$telegram_${topic}_topic_id"
+	topic_id_key=telegram_"$topic"_topic_id
+	topic_id="${!topic_id_key}"
 	bot_token="$telegram_bot_token"
 }
 
@@ -54,13 +55,13 @@ alert_message() {
 }
 
 # Notifies server owners of an error event.
-alert_message() {
+alert_error() {
 	error_message=$1
 	uuid=$(cat /proc/sys/kernel/random/uuid)
 
 	echo "error: $error_message ($uuid)"
 
-	alert "🚨⛔️ Something went wrong processing a log message!\nPlease check the logs for transaction id: $uuid."
+	alert_message "🚨⛔️ Something went wrong processing a log message!\nPlease check the logs for transaction id: $uuid."
 }
 
 # Prevents intrusors of establishing new connections with the server.
@@ -100,7 +101,7 @@ schedule_flush_intrusions() {
 register_handler() {
 	callback="$1"
 
-	handlers+=($callback)
+	handlers+=("$callback")
 }
 
 # The most basic request log handler that simlpy alerts server owners of a new request.
@@ -129,7 +130,7 @@ init() {
 	topic="$1"
 
 	load_env $topic
-	register_handler default_handler
+	register_handler "default_handler"
 
 	tail -fn0 /var/log/nginx/$topic.access.log |
 		while read line; do
@@ -139,7 +140,7 @@ init() {
 				continue
 			else
 				for handler in "${handlers[@]}"; do
-					"${handler}" "${topic}"
+					"${handler}" "${log_message}"
 				done
 			fi
 		done

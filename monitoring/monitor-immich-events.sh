@@ -13,9 +13,9 @@ on_authentication_attempt() {
 authentication_attempt_handler() {
 	request_log="$1"
 
-	pattern_handler $request_log "POST /api/auth" on_authentication_attempt
+	pattern_handler "$request_log" "POST /api/auth" "on_authentication_attempt"
 }
 
-register_handler authentication_attempt_handler
+register_handler "authentication_attempt_handler"
 
 init
