@@ -127,7 +127,11 @@ register_handler() {
 default_handler() {
 	request_log="$1"
 
-	alert_message "ℹ️ New request!\n$request_log"
+	read status < <(echo $(echo "$request_log" | jq -r '.Status'))
+
+	if [ $status -gt 299 ]; then
+		alert_message "ℹ️ New request!\n$request_log"
+	fi
 }
 
 # A request log handler that checks if a request matches a regex pattern. If so, executes a callback.
